@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+	<link rel="stylesheet" href="css/weather-icons.min.css">
+	<link href='https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz' rel='stylesheet' type='text/css'>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+	<script type="text/javascript">
+		
+		$(document).ready(function(){
+			timer();
+			clock();
+			loaddate();
+		});
+		
+		function timer(){
+			setTimeout(function(){ timer(); }, 20000);
+
+			loadweather();
+		}
+		function clock(){
+			setTimeout(function(){ clock(); }, 1000);
+			
+			var greetings = [{value:8,text:"Guten Morgen!"},{value:12,text:"Hallo!"},{value:14,text:"Mahlzeit!"},{value:20,text:"Wie geht's!"},{value:24,text:"Gute Nacht!"}]
+			var d = new Date();
+			
+			var h = d.getHours();
+			var m = d.getMinutes();
+			var s = d.getSeconds();
+			
+			if(h < 10){h = "0" + h; }
+			if(m < 10){m = "0" + m; }
+			if(s < 10){s = "0" + s; }
+			
+			$("#clock").html(h + ":" + m + ":" + s);
+			
+			$.each(greetings, function(i,v){
+				if(h < v.value){
+					$("#greeting").html(v.text);
+					return false;
+				}
+			});
+			
+			if(h==0 && m==0 && s==0){
+				loaddate();
+			}
+		}
+		function loaddate(){
+			var d=new Date();
+			var days = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+			
+			$("#date").html(days[d.getDay()] + ", " + d.getDate() + "." + d.getMonth() + "." + d.getFullYear());
+		}
+		function setweathericon(elem,ic){
+			var icons = [{id: "01d", icon: "wi-day-sunny"},{id: "02d", icon: "wi-day-cloudy"},{id: "03d", icon: "wi-cloud"},{id: "04d", icon: "wi-cloudy"},{id: "09d", icon: "wi-day-showers"},{id: "10d", icon: "wi-day-rain"},{id: "11d", icon: "wi-thunderstorm"},{id: "13d", icon: "wi-snow"},{id: "50d", icon: "wi-fog"},{id: "01n", icon: "wi-night-clear"},{id: "02n", icon: "wi-night-alt-cloudy"},{id: "03n", icon: "wi-cloud"},{id: "04n", icon: "wi-cloudy"},{id: "09n", icon: "wi-night-alt-hail"},{id: "10n", icon: "wi-night-alt-rain"},{id: "11n", icon: "wi-thunderstorm"},{id: "13n", icon: "wi-snow"},{id: "50n", icon: "wi-fog"}];
+			var icon;
+			
+			$.each(icons,function(index,value){
+				if(value.id==ic){
+					icon = value.icon;
+				}
+			});
+			$(elem).attr("class","wi "+icon)
+		}
+		function loadweather(){
+			$.ajax({
+				method: "GET",
+				url: "http://api.openweathermap.org/data/2.5/weather",
+				data: {
+					"q":"Bizau",
+					"appid":"39327cbb8a07db34125e7cc5bfa3c888",
+					"lang":"de",
+					"units":"metric"
+				},
+				success: function(e){
+					setweathericon($("#weather"),e.weather[0].icon)
+					
+					$("#temperatur").html(Math.round(e.main.temp) + " °C");
+					$("#weatherphrase").html(e.weather[0].description);
+				}
+			});
+			
+			$.ajax({
+				method: "GET",
+				url: "http://api.openweathermap.org/data/2.5/forecast",
+				data: {
+					"q":"Bizau",
+					"appid":"39327cbb8a07db34125e7cc5bfa3c888",
+					"lang":"de",
+					"units":"metric"
+				},
+				success: function(e){
+					var date=new Date().getDate();
+					var release=false;
+					var days = ["So","Mo","Di","Mi","Do","Fr","Sa","So"];
+					
+					var row = $("<tr>");
+					$("#forecasttable").html("<tr><th></th><th>00:00</th><th>03:00</th><th>06:00</th><th>09:00</th><th>12:00</th><th>15:00</th><th>18:00</th><th>21:00</th></tr>")
+					
+					$.each(e.list, function(i,v){
+						var d = (new Date(v.dt_txt))
+						if(date != d.getDate()){
+							$("#forecasttable").append(row);
+							row = $("<tr>");
+							row.append("<th>" + days[d.getDay()] + "</td>");
+							release=true;
+							date = d.getDate();
+						}
+						if(release && date==d.getDate()){
+							var arow = $("<td>")
+							var icon = $("<i>");
+							setweathericon(icon, v.weather[0].icon);
+							icon.html("</br>" + Math.round(v.main.temp) + "°")
+							arow.append(icon);
+							row.append(arow)
+						}
+					});
+					console.log(e)
+				}
+			});
+		}
+	</script>
+	<style>
+		body{
+			font-family: 'Yanone Kaffeesatz', sans-serif;
+			background-color: black;
+			color: white;
+			font-size: 30px;
+			text-align: center;
+		}
+		#weather{
+			margin: 20px;
+			font-size: 60px;
+		}
+		.tempcontainer{
+			margin: 20px;
+			width: 400px;
+
+			padding: 10px;
+		}
+		.tempcontainer span{
+			display: block;
+		}
+		.clockcontainer{
+			position: absolute;
+			width: 200px;
+			right: 50px;
+			top: 50px;
+			font-size: 50px;
+			letter-spacing: 4px;
+		}
+		#greeting{
+			position: absolute;
+			top: 40px;
+			display:inline-block;
+			font-size: 40px;
+		}
+		#date{
+			display:block;
+			font-size: 20px;
+		}
+		#forecasttable{
+    		margin-top: 80px;
+    		font-size: 20px;
+		}
+		#forecasttable th{
+			font-weight: normal;
+		}
+		#forecasttable td{
+			padding:5px;
+			width: 100px;
+			font-size: 15px;
+		}
+		#forecasttable i{
+			line-height: 20px;
+		}
+	</style>
+</head>
+<body>
+	<div class="tempcontainer">
+		<i id="weather"></i>
+		<span id="weatherphrase"></span>
+		<span id="temperatur"></span>
+		<table id="forecasttable"></table>
+	</div>
+	<div class="clockcontainer">
+		<span id="clock"></span>
+		<span id="date"></span>
+	</div>
+	<span id="greeting"></span>
+</body>
+</html>
